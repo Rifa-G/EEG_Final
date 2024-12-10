@@ -10,11 +10,12 @@ import {
   Legend,
   LineChart,
   Line,
+  Wallet,
+  Bitcoin,
 } from 'recharts';
 import {
   Send,
   Users,
-  Wallet,
   Globe,
   Repeat,
   Clock,
@@ -24,8 +25,6 @@ import {
   HelpCircle,
   Moon,
   LayoutGrid,
-  Bitcoin,
-  CandlestickChart,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -73,6 +72,10 @@ const NexusLogo = () => (
 
 const BankingDashboard = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [showBuyModal, setShowBuyModal] = useState(false);
+  const [selectedCrypto, setSelectedCrypto] = useState(null);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState(null);
+  const [showSignup, setShowSignup] = useState(false);
   const [darkMode, setDarkMode] = useState(true);
   const [graphView, setGraphView] = useState('combined');
   const navigate = useNavigate();
@@ -100,6 +103,12 @@ const BankingDashboard = () => {
     { date: '2024-01', value: 8500 },
     { date: '2024-02', value: 9200 },
     { date: '2024-03', value: 10754.41 },
+  ];
+
+  const paymentMethods = [
+    { symbol: 'USD', name: 'US Dollar', balance: '4,550.00', usdValue: '4,550.00', type: 'fiat' },
+    { symbol: 'BTC', name: 'Bitcoin', balance: '0.45', usdValue: '20,490.45', type: 'crypto' },
+    { symbol: 'ETH', name: 'Ethereum', balance: '4.2', usdValue: '11,998.98', type: 'crypto' },
   ];
 
   const styles = {
@@ -175,6 +184,43 @@ const BankingDashboard = () => {
       alignItems: 'center',
       justifyContent: 'center',
     },
+    modal: {
+      position: 'fixed',
+      top: '50%',
+      left: '50%',
+      transform: 'translate(-50%, -50%)',
+      background: '#1A1A27',
+      borderRadius: '20px',
+      padding: '32px',
+      width: '480px',
+      zIndex: 1000,
+      color: 'white',
+    },
+    overlay: {
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      background: 'rgba(0, 0, 0, 0.8)',
+      zIndex: 999,
+    },
+    button: {
+      padding: '12px',
+      backgroundColor: '#2563eb',
+      color: 'white',
+      border: 'none',
+      borderRadius: '8px',
+      cursor: 'pointer',
+      marginTop: '16px',
+    },
+    input: {
+      width: '100%',
+      padding: '12px',
+      marginBottom: '16px',
+      borderRadius: '8px',
+      border: '1px solid #ccc',
+    },
   };
 
   const quickActions = [
@@ -198,6 +244,16 @@ const BankingDashboard = () => {
     { icon: HelpCircle, label: 'Help Centre', id: 'help' },
     { icon: Moon, label: 'Dark Mode', id: 'darkMode', toggle: true },
   ];
+
+  const handleBuy = (crypto) => {
+    setSelectedCrypto(crypto);
+    setShowBuyModal(true);
+  };
+
+  const finalizeOrder = () => {
+    setShowBuyModal(false);
+    setShowSignup(true);
+  };
 
   return (
     <div style={styles.container}>
@@ -553,8 +609,61 @@ const BankingDashboard = () => {
           </div>
         </div>
       </main>
+
+      {/* Buy Modal */}
+      {showBuyModal && (
+        <>
+          <div style={styles.overlay} onClick={() => setShowBuyModal(false)} />
+          <div style={styles.modal}>
+            <h2>Buy {selectedCrypto.symbol}</h2>
+            <p>Current Price: ${selectedCrypto.currentPrice}</p>
+
+            <h3>Select Payment Method</h3>
+            {paymentMethods.map((method) => (
+              <button
+                key={method.symbol}
+                onClick={() => setSelectedPaymentMethod(method)}
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  padding: '12px',
+                  background: selectedPaymentMethod?.symbol === method.symbol ? 'rgb(37, 99, 235)' : '#252536',
+                  color: 'white',
+                  border: '1px solid #2563eb',
+                  borderRadius: '8px',
+                  width: '100%',
+                  marginBottom: '8px',
+                  cursor: 'pointer',
+                }}
+              >
+                <span>{method.name}</span>
+                <span>{method.usdValue}</span>
+              </button>
+            ))}
+
+            <button style={styles.button} onClick={finalizeOrder}>
+              Finalize Order
+            </button>
+          </div>
+        </>
+      )}
+
+      {/* Signup Form */}
+      {showSignup && (
+        <>
+          <div style={styles.overlay} onClick={() => setShowSignup(false)} />
+          <div style={styles.modal}>
+            <h2>Sign Up</h2>
+            <p>Enter your email to complete the purchase:</p>
+            <input type="email" placeholder="Email" style={styles.input} />
+            <button style={styles.button}>Submit</button>
+          </div>
+        </>
+      )}
     </div>
   );
 };
 
 export default BankingDashboard;
+
+

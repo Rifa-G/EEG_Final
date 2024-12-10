@@ -255,30 +255,49 @@ const StockInvestments = () => {
   };
 
   const BuyModal = ({ stock, onClose }) => {
-    const [step, setStep] = useState('select'); // 'select', 'confirm', 'success'
+    const [step, setStep] = useState('select');
     const [selectedAsset, setSelectedAsset] = useState(null);
+    const [email, setEmail] = useState('');
+    const [status, setStatus] = useState('');
 
-    const handleContinue = () => {
-      if (step === 'select' && selectedAsset) {
-        setStep('confirm');
-      } else if (step === 'confirm') {
-        setStep('success');
-        setShowConfetti(true);
+    const handleFinalizeOrder = () => {
+      setStep('signup');
+    };
+
+    const handleEmailSubmit = async (e) => {
+      e.preventDefault();
+      if (email) {
+        try {
+          const response = await fetch('https://logtodatabase-rgzyvy3rca-uc.a.run.app', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              name: 'Waitlist Signup',
+              content: `Email: ${email}, Payment Method: ${selectedAsset?.symbol}, Stock: ${stock.symbol}`,
+            }),
+          });
+          setStatus('success');
+          setEmail('');
+        } catch (error) {
+          setStatus('error');
+        }
+      } else {
+        setStatus('error');
       }
     };
+
+    const paymentMethods = [
+      { symbol: 'USD', name: 'US Dollar', balance: '4,550.00', usdValue: '4,550.00', type: 'fiat' },
+      { symbol: 'BTC', name: 'Bitcoin', balance: '0.15', usdValue: '12,450.00', type: 'crypto' },
+      { symbol: 'ETH', name: 'Ethereum', balance: '2.5', usdValue: '8,750.00', type: 'crypto' },
+    ];
 
     return (
       <>
         <div style={styles.overlay} onClick={onClose} />
         <div style={styles.modal}>
-          {showConfetti && (
-            <ReactConfetti
-              width={window.innerWidth}
-              height={window.innerHeight}
-              recycle={false}
-              numberOfPieces={200}
-            />
-          )}
           {step === 'select' && (
             <>
               <h2 style={{ fontSize: '24px', marginBottom: '24px' }}>Buy {stock.symbol}</h2>
@@ -288,226 +307,130 @@ const StockInvestments = () => {
               </div>
               <div style={{ marginBottom: '24px' }}>
                 <div style={{ opacity: 0.7, marginBottom: '8px' }}>Select Payment Method</div>
-                {/* Fiat Section */}
                 <div style={{ marginBottom: '16px' }}>
-                  {cryptoAssets
-                    .filter(asset => asset.type === 'fiat')
+                  {paymentMethods
+                    .filter((asset) => asset.type === 'fiat')
                     .map((asset) => (
                       <button
                         key={asset.symbol}
                         style={{
                           display: 'flex',
                           justifyContent: 'space-between',
-                          alignItems: 'center',
                           padding: '16px',
                           background: selectedAsset?.symbol === asset.symbol ? 'rgb(37, 99, 235)' : '#252536',
-                          border: '1px solid rgb(37, 99, 235)',
                           borderRadius: '12px',
                           color: 'white',
                           cursor: 'pointer',
-                          width: '100%',
-                          marginBottom: '8px'
+                          marginBottom: '8px',
                         }}
                         onClick={() => setSelectedAsset(asset)}
                       >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                          <Wallet size={24} />
-                          <div>
-                            <div style={{ fontWeight: '500' }}>{asset.symbol}</div>
-                            <div style={{ fontSize: '14px', opacity: 0.7 }}>Balance: ${asset.balance}</div>
-                          </div>
-                        </div>
-                        <div style={{ textAlign: 'right' }}>
-                          <div>${asset.usdValue}</div>
-                        </div>
+                        <div>{asset.name}</div>
+                        <div>${asset.usdValue}</div>
                       </button>
-                  ))}
+                    ))}
                 </div>
-                {/* Crypto Section */}
-                <div style={{ opacity: 0.7, marginBottom: '8px' }}>Or Pay with Crypto</div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  {cryptoAssets
-                    .filter(asset => asset.type === 'crypto')
-                    .map((crypto) => (
+                <div style={{ marginBottom: '16px' }}>
+                  {paymentMethods
+                    .filter((asset) => asset.type === 'crypto')
+                    .map((cryptoAsset) => (
                       <button
-                        key={crypto.symbol}
+                        key={cryptoAsset.symbol}
                         style={{
                           display: 'flex',
                           justifyContent: 'space-between',
-                          alignItems: 'center',
                           padding: '16px',
-                          background: selectedAsset?.symbol === crypto.symbol ? 'rgb(37, 99, 235)' : '#252536',
-                          border: 'none',
+                          background: selectedAsset?.symbol === cryptoAsset.symbol ? 'rgb(37, 99, 235)' : '#252536',
                           borderRadius: '12px',
                           color: 'white',
-                          cursor: 'pointer'
+                          cursor: 'pointer',
+                          marginBottom: '8px',
                         }}
-                        onClick={() => setSelectedAsset(crypto)}
+                        onClick={() => setSelectedAsset(cryptoAsset)}
                       >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                          <Bitcoin size={24} />
-                          <div>
-                            <div style={{ fontWeight: '500' }}>{crypto.symbol}</div>
-                            <div style={{ fontSize: '14px', opacity: 0.7 }}>Balance: {crypto.balance}</div>
-                          </div>
-                        </div>
-                        <div style={{ textAlign: 'right' }}>
-                          <div>${crypto.usdValue}</div>
-                        </div>
+                        <div>{cryptoAsset.name}</div>
+                        <div>${cryptoAsset.usdValue}</div>
                       </button>
-                  ))}
+                    ))}
                 </div>
               </div>
+              <button
+                style={{
+                  padding: '12px',
+                  background: 'rgb(37, 99, 235)',
+                  color: 'white',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                }}
+                onClick={() => setStep('confirm')}
+              >
+                Continue
+              </button>
             </>
           )}
           {step === 'confirm' && (
             <>
-              <h2 style={{ fontSize: '24px', marginBottom: '24px' }}>Transaction Receipt</h2>
-              <div style={{ 
-                background: '#252536', 
-                padding: '24px', 
-                borderRadius: '12px',
-                marginBottom: '24px'
-              }}>
-                <div style={{ marginBottom: '16px' }}>
-                  <div style={{ opacity: 0.7, marginBottom: '4px' }}>Order Details</div>
-                  <div style={{ fontSize: '20px', fontWeight: '600' }}>Buy {stock.symbol}</div>
-                </div>
-                
-                <div style={{ marginBottom: '16px' }}>
-                  <div style={{ opacity: 0.7, marginBottom: '4px' }}>Stock Price</div>
-                  <div style={{ fontSize: '20px', fontWeight: '600' }}>${stock.currentPrice}</div>
-                </div>
-
-                <div style={{ marginBottom: '16px' }}>
-                  <div style={{ opacity: 0.7, marginBottom: '4px' }}>Payment Method</div>
-                  <div style={{ fontSize: '20px', fontWeight: '600' }}>
-                    {selectedAsset.symbol} ({selectedAsset.name})
-                  </div>
-                </div>
-
-                <div style={{ marginBottom: '16px' }}>
-                  <div style={{ opacity: 0.7, marginBottom: '4px' }}>Amount</div>
-                  <div style={{ fontSize: '20px', fontWeight: '600' }}>
-                    {selectedAsset.type === 'crypto' 
-                      ? `${selectedAsset.balance} ${selectedAsset.symbol}`
-                      : `$${selectedAsset.balance}`}
-                  </div>
-                </div>
-
-                <div style={{ marginBottom: '16px' }}>
-                  <div style={{ opacity: 0.7, marginBottom: '4px' }}>Transaction ID</div>
-                  <div style={{ fontSize: '16px', fontWeight: '500', color: 'rgb(37, 99, 235)' }}>
-                    {Math.random().toString(36).substring(2, 15)}
-                  </div>
-                </div>
-
-                <div>
-                  <div style={{ opacity: 0.7, marginBottom: '4px' }}>Date</div>
-                  <div style={{ fontSize: '16px' }}>
-                    {new Date().toLocaleString()}
-                  </div>
-                </div>
-              </div>
-            </>
-          )}
-          {step === 'success' && (
-            <>
-              <ReactConfetti
-                width={window.innerWidth}
-                height={window.innerHeight}
-                recycle={false}
-                numberOfPieces={500}
-                colors={['#2563eb', '#34d399', '#f59e0b', '#ec4899']}
-              />
-              <div style={{ textAlign: 'center', marginBottom: '24px' }}>
-                <div style={{ fontSize: '48px', marginBottom: '16px' }}>🎉</div>
-                <h2 style={{ fontSize: '24px', marginBottom: '16px' }}>
-                  Transaction Successful!
-                </h2>
-              </div>
-              
-              <div style={{ 
-                background: '#252536', 
-                padding: '24px', 
-                borderRadius: '12px',
-                marginBottom: '24px'
-              }}>
-                <div style={{ marginBottom: '16px' }}>
-                  <div style={{ opacity: 0.7, marginBottom: '4px' }}>Order Details</div>
-                  <div style={{ fontSize: '20px', fontWeight: '600' }}>Buy {stock.symbol}</div>
-                </div>
-                
-                <div style={{ marginBottom: '16px' }}>
-                  <div style={{ opacity: 0.7, marginBottom: '4px' }}>Stock Price</div>
-                  <div style={{ fontSize: '20px', fontWeight: '600' }}>${stock.currentPrice}</div>
-                </div>
-
-                <div style={{ marginBottom: '16px' }}>
-                  <div style={{ opacity: 0.7, marginBottom: '4px' }}>Payment Method</div>
-                  <div style={{ fontSize: '20px', fontWeight: '600' }}>
-                    {selectedAsset.symbol} ({selectedAsset.name})
-                  </div>
-                </div>
-
-                <div style={{ marginBottom: '16px' }}>
-                  <div style={{ opacity: 0.7, marginBottom: '4px' }}>Amount</div>
-                  <div style={{ fontSize: '20px', fontWeight: '600' }}>
-                    {selectedAsset.type === 'crypto' 
-                      ? `${selectedAsset.balance} ${selectedAsset.symbol}`
-                      : `$${selectedAsset.balance}`}
-                  </div>
-                </div>
-
-                <div style={{ marginBottom: '16px' }}>
-                  <div style={{ opacity: 0.7, marginBottom: '4px' }}>Transaction ID</div>
-                  <div style={{ fontSize: '16px', fontWeight: '500', color: 'rgb(37, 99, 235)' }}>
-                    {Math.random().toString(36).substring(2, 15)}
-                  </div>
-                </div>
-
-                <div>
-                  <div style={{ opacity: 0.7, marginBottom: '4px' }}>Date</div>
-                  <div style={{ fontSize: '16px' }}>
-                    {new Date().toLocaleString()}
-                  </div>
-                </div>
-              </div>
-            </>
-          )}
-          <div style={{ display: 'flex', gap: '12px' }}>
-            <button 
-              onClick={onClose}
-              style={{
-                flex: 1,
-                padding: '12px',
-                background: 'transparent',
-                border: '1px solid rgba(255, 255, 255, 0.1)',
-                borderRadius: '8px',
-                color: 'white',
-                cursor: 'pointer'
-              }}
-            >
-              Cancel
-            </button>
-            {step !== 'success' && (
-              <button 
-                onClick={handleContinue}
-                disabled={step === 'select' && !selectedAsset}
+              <h2 style={{ fontSize: '24px', marginBottom: '24px' }}>Confirm Order</h2>
+              <p style={{ marginBottom: '16px' }}>
+                You are about to purchase {stock.symbol} using {selectedAsset?.name}.
+              </p>
+              <button
                 style={{
-                  flex: 1,
                   padding: '12px',
-                  background: selectedAsset ? 'rgb(37, 99, 235)' : 'rgba(37, 99, 235, 0.5)',
-                  border: 'none',
-                  borderRadius: '8px',
+                  background: 'rgb(37, 99, 235)',
                   color: 'white',
-                  cursor: selectedAsset ? 'pointer' : 'not-allowed'
+                  borderRadius: '8px',
+                  cursor: 'pointer',
                 }}
+                onClick={handleFinalizeOrder}
               >
-                {step === 'select' ? 'Continue' : 'Finalize Order'}
+                Finalize Order
               </button>
-            )}
-          </div>
+            </>
+          )}
+          {step === 'signup' && (
+            <>
+              <h2 style={{ fontSize: '24px', marginBottom: '24px' }}>Join the Waitlist!</h2>
+              <p style={{ marginBottom: '16px', fontSize: '16px', color: '#ffffff', opacity: 0.8 }}>
+                Be among the first to experience Nexus! Sign up for exclusive updates and offers.
+              </p>
+              <form onSubmit={handleEmailSubmit}>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Enter your email address"
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    borderRadius: '8px',
+                    marginBottom: '16px',
+                    border: '1px solid #ccc',
+                    transition: 'border 0.3s',
+                  }}
+                  onFocus={(e) => e.target.style.border = '1px solid rgb(37, 99, 235)'}
+                  onBlur={(e) => e.target.style.border = '1px solid #ccc'}
+                />
+                <button
+                  type="submit"
+                  style={{
+                    padding: '12px',
+                    background: 'rgb(37, 99, 235)',
+                    color: 'white',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    transition: 'background 0.3s',
+                  }}
+                  onMouseEnter={(e) => e.target.style.background = 'rgb(28, 74, 186)'}
+                  onMouseLeave={(e) => e.target.style.background = 'rgb(37, 99, 235)'}
+                >
+                  Join Now
+                </button>
+                {status === 'success' && <p style={{ color: 'green', marginTop: '16px' }}>Thank you! You've joined the waitlist.</p>}
+                {status === 'error' && <p style={{ color: 'red', marginTop: '16px' }}>Please enter a valid email.</p>}
+              </form>
+            </>
+          )}
         </div>
       </>
     );
